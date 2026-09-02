@@ -819,10 +819,9 @@ std::optional<std::string> CServerHandler::canQuickLoadGame(const std::string & 
 		return "Generic error loading save.";
 	}
 
-	// initial start info from quick load slot
+	// start info from quick load slot - saves store the randomized start info, not the pregame one
 	const auto * startInfo1 = mapInfo->scenarioOptionsOfSave.get();
-	// initial start info from game state (not current start info)
-	const auto * startInfo2 = client->gameState().getInitialStartInfo();
+	const auto * startInfo2 = client->gameState().getStartInfo();
 
 	if (!startInfo1)
 		return "Missing quick load start info.";
