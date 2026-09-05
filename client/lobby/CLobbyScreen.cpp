@@ -432,6 +432,7 @@ void CLobbyScreen::updateAfterStateChange()
 		info.recordGame = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["recordGame"].Bool();
 		info.revealMageGuildSpells = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["revealMageGuildSpells"].Bool();
 		info.revealHiddenRewards = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["revealHiddenRewards"].Bool();
+		info.revealMonsterInfo = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["revealMonsterInfo"].Bool();
 		if(info != GAME->server().si->extraOptionsInfo)
 			GAME->server().setExtraOptionsInfo(info);
 	}
