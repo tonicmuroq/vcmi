@@ -182,6 +182,17 @@ public:
 	ObeliskPopup(const Point & position, const CGObelisk * obelisk);
 };
 
+class CreatureEncounterPopup : public AdventureMapPopup
+{
+	std::shared_ptr<CFilledTexture> filledBackground;
+	std::shared_ptr<CLabel> labelTitle;
+	std::shared_ptr<CComponentBox> stacks;
+	std::shared_ptr<CTextBox> text;
+
+public:
+	CreatureEncounterPopup(const Point & position, const CGCreature * creature, const CGHeroInstance * hero);
+};
+
 class SearchPopup : public AdventureMapPopup
 {
 	std::shared_ptr<FilledTexturePlayerColored> filledBackground;

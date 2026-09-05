@@ -1167,6 +1167,8 @@ void CVCMIServer::multiplayerWelcomeMessage()
 		optionIds.emplace_back("vcmi.optionsTab.revealMageGuildSpells.hover");
 	if(si->extraOptionsInfo.revealHiddenRewards)
 		optionIds.emplace_back("vcmi.optionsTab.revealHiddenRewards.hover");
+	if(si->extraOptionsInfo.revealMonsterInfo)
+		optionIds.emplace_back("vcmi.optionsTab.revealMonsterInfo.hover");
 
 	if(!optionIds.size()) // No settings to publish
 		return;

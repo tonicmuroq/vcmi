@@ -20,6 +20,8 @@ struct DLL_LINKAGE ExtraOptionsInfo
 	bool revealMageGuildSpells = false;
 	/// if set, rewards that are normally hidden (Pandora's Box, creature banks) are shown on right click
 	bool revealHiddenRewards = false;
+	/// if set, monster popup shows how the stack splits for battle and whether it joins, flees or fights the selected hero
+	bool revealMonsterInfo = false;
 
 	bool operator == (const ExtraOptionsInfo & other) const = default;
 
@@ -43,5 +45,10 @@ struct DLL_LINKAGE ExtraOptionsInfo
 			revealMageGuildSpells = false;
 			revealHiddenRewards = false;
 		}
+
+		if(h.hasFeature(Handler::Version::REVEAL_MONSTER_INFO))
+			h & revealMonsterInfo;
+		else
+			revealMonsterInfo = false;
 	}
 };

@@ -76,6 +76,13 @@
 					"callback" : "setRevealHiddenRewards",
 					"help" : "vcmi.optionsTab.revealHiddenRewards",
 					"selected" : false
+				},
+				{
+					"name": "buttonRevealMonsterInfo",
+					"image": "lobby/checkbox",
+					"callback" : "setRevealMonsterInfo",
+					"help" : "vcmi.optionsTab.revealMonsterInfo",
+					"selected" : false
 				}
 			]
 		},
@@ -120,6 +127,13 @@
 					"alignment": "left",
 					"color": "yellow",
 					"text": "vcmi.optionsTab.revealHiddenRewards.hover"
+				},
+				{
+					"name": "labelRevealMonsterInfo",
+					"font": "small",
+					"alignment": "left",
+					"color": "yellow",
+					"text": "vcmi.optionsTab.revealMonsterInfo.hover"
 				}
 			]
 		}

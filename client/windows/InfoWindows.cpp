@@ -452,6 +452,57 @@ CInfoBoxPopup::CInfoBoxPopup(Point position, const CGCreature * creature)
 	fitToScreen(10);
 }
 
+CreatureEncounterPopup::CreatureEncounterPopup(const Point & position, const CGCreature * creature, const CGHeroInstance * hero)
+	: AdventureMapPopup(BORDERED | RCLICK_POPUP)
+{
+	OBJECT_CONSTRUCTION;
+
+	constexpr int sideMargin = 24;
+	constexpr int topMargin = 14;
+	constexpr int bottomMargin = 18;
+	constexpr int gap = 12;
+	constexpr int minTextWidth = 250;
+	constexpr int betweenStacks = 12;
+
+	filledBackground = std::make_shared<CFilledTexture>(ImagePath::builtin("DIBOXBCK"), Rect(0, 0, 0, 0));
+
+	std::vector<std::shared_ptr<CComponent>> components;
+	for(const auto & [creatureID, count] : creature->getEncounterStacks(hero))
+		components.push_back(std::make_shared<CComponent>(Component(ComponentType::CREATURE, creatureID, count), CComponent::medium));
+
+	// all stacks go in one row - the split never exceeds 7 stacks
+	stacks = std::make_shared<CComponentBox>(components, Rect(0, 0, 0, 0), betweenStacks, CComponentBox::defaultBetweenSubtitlesMin, CComponentBox::defaultBetweenRows, 7);
+
+	MetaString title;
+	title.appendNamePlural(creature->getCreatureID());
+
+	MetaString description = creature->getEncounterDecisionText(hero);
+	if(settings["general"]["enableUiEnhancements"].Bool())
+		description.append(creature->getThreatText(hero));
+
+	int contentWidth = std::max(stacks->pos.w, minTextWidth);
+	text = std::make_shared<CTextBox>(description.toString(&GAME->translator()), Rect(0, 0, contentWidth, 200), 0, FONT_MEDIUM, ETextAlignment::CENTER, Colors::WHITE);
+	if(!text->slider)
+		text->resize(Point(contentWidth, text->label->textSize.y));
+
+	// CLabel computes its own size only for TOPLEFT alignment, so center it by hand below
+	labelTitle = std::make_shared<CLabel>(0, 0, FONT_BIG, ETextAlignment::TOPLEFT, Colors::WHITE, title.toString(&GAME->translator()));
+	vstd::amax(contentWidth, labelTitle->pos.w);
+
+	pos.w = contentWidth + 2 * sideMargin;
+	pos.h = topMargin + labelTitle->pos.h + gap + stacks->pos.h + gap + text->pos.h + bottomMargin;
+	filledBackground->pos = Rect(pos);
+
+	labelTitle->moveTo(Point((pos.w - labelTitle->pos.w) / 2, topMargin));
+	stacks->moveTo(Point((pos.w - stacks->pos.w) / 2, topMargin + labelTitle->pos.h + gap));
+	text->moveTo(Point((pos.w - text->pos.w) / 2, topMargin + labelTitle->pos.h + gap + stacks->pos.h + gap));
+
+	center(position);
+	fitToScreen(10);
+	updateShadow();
+	addUsedEvents(DRAG_POPUP);
+}
+
 MinimapWithIcons::MinimapWithIcons(const Point & position)
 {
 	OBJECT_CONSTRUCTION;
@@ -678,7 +729,12 @@ CRClickPopup::createCustomInfoWindow(Point position, const CGObjectInstance * sp
 		case Obj::TOWN:
 			return std::make_shared<CInfoBoxPopup>(position, dynamic_cast<const CGTownInstance *>(specific));
 		case Obj::MONSTER:
+		{
+			const auto * hero = GAME->interface()->localState->getCurrentHero();
+			if(hero && GAME->interface()->cb->getStartInfo()->extraOptionsInfo.revealMonsterInfo)
+				return std::make_shared<CreatureEncounterPopup>(position, dynamic_cast<const CGCreature *>(specific), hero);
 			return std::make_shared<CInfoBoxPopup>(position, dynamic_cast<const CGCreature *>(specific));
+		}
 		case Obj::GARRISON:
 		case Obj::GARRISON2:
 			return std::make_shared<CInfoBoxPopup>(position, dynamic_cast<const CGGarrison *>(specific));

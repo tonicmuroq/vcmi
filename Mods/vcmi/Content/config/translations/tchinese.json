@@ -960,6 +960,8 @@
 	"vcmi.optionsTab.revealHiddenRewards.hover": "顯示隱藏獎勵",
 	"vcmi.optionsTab.revealMageGuildSpells.help": "{顯示魔法行會法術}\n右鍵城鎮時顯示各級魔法行會的法術,包括尚未建造的等級。",
 	"vcmi.optionsTab.revealMageGuildSpells.hover": "顯示魔法行會法術",
+	"vcmi.optionsTab.revealMonsterInfo.help": "{顯示怪物資訊}\n選中英雄後右鍵野怪,顯示戰鬥時的分組以及它們會加入、索要金幣、逃跑還是戰鬥。",
+	"vcmi.optionsTab.revealMonsterInfo.hover": "顯示怪物資訊",
 	"vcmi.optionsTab.unlimitedReplay.help": "{無限戰鬥回放}\n戰鬥回放沒有任何限制。",
 	"vcmi.optionsTab.unlimitedReplay.hover": "無限戰鬥回放",
 	"vcmi.otherOptions.availableCreaturesAsDwellingLabel.help": "{顯示可招募生物}\n\n在城鎮摘要(城鎮螢幕的左下角)中顯示可招募的生物數量，而不是增長。",
