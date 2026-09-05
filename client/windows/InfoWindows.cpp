@@ -467,8 +467,9 @@ CreatureEncounterPopup::CreatureEncounterPopup(const Point & position, const CGC
 	filledBackground = std::make_shared<CFilledTexture>(ImagePath::builtin("DIBOXBCK"), Rect(0, 0, 0, 0));
 
 	std::vector<std::shared_ptr<CComponent>> components;
+	// subtitle is only the stack size - the creature name is already the window title
 	for(const auto & [creatureID, count] : creature->getEncounterStacks(hero))
-		components.push_back(std::make_shared<CComponent>(Component(ComponentType::CREATURE, creatureID, count), CComponent::medium));
+		components.push_back(std::make_shared<CComponent>(ComponentType::CREATURE, creatureID, std::to_string(count), CComponent::medium));
 
 	// all stacks go in one row - the split never exceeds 7 stacks
 	stacks = std::make_shared<CComponentBox>(components, Rect(0, 0, 0, 0), betweenStacks, CComponentBox::defaultBetweenSubtitlesMin, CComponentBox::defaultBetweenRows, 7);
@@ -493,9 +494,10 @@ CreatureEncounterPopup::CreatureEncounterPopup(const Point & position, const CGC
 	pos.h = topMargin + labelTitle->pos.h + gap + stacks->pos.h + gap + text->pos.h + bottomMargin;
 	filledBackground->pos = Rect(pos);
 
-	labelTitle->moveTo(Point((pos.w - labelTitle->pos.w) / 2, topMargin));
-	stacks->moveTo(Point((pos.w - stacks->pos.w) / 2, topMargin + labelTitle->pos.h + gap));
-	text->moveTo(Point((pos.w - text->pos.w) / 2, topMargin + labelTitle->pos.h + gap + stacks->pos.h + gap));
+	// children were created at the window origin, so offsets are relative to it
+	labelTitle->moveBy(Point((pos.w - labelTitle->pos.w) / 2, topMargin));
+	stacks->moveBy(Point((pos.w - stacks->pos.w) / 2, topMargin + labelTitle->pos.h + gap));
+	text->moveBy(Point((pos.w - text->pos.w) / 2, topMargin + labelTitle->pos.h + gap + stacks->pos.h + gap));
 
 	center(position);
 	fitToScreen(10);
