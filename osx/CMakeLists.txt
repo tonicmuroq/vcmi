@@ -6,6 +6,10 @@ if(MACOS)
 	set(executablesDir "${bundleContentsDir}/MacOS")
 
 	set(macdeployqtParams "\"${bundleDir}\"")
+	# CFBundleExecutable is vcmilauncher, so macdeployqt would leave the other binaries linked against
+	# whatever prefix they were built with (e.g. Homebrew) instead of the bundled copies
+	string(APPEND macdeployqtParams " \"-executable=${executablesDir}/vcmiclient\"")
+	string(APPEND macdeployqtParams " \"-executable=${executablesDir}/vcmiserver\"")
 	if(ENABLE_EDITOR)
 		string(APPEND macdeployqtParams " \"-executable=${executablesDir}/vcmieditor\"")
 	endif()
