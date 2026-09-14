@@ -16,6 +16,7 @@
 #include "BattleRenderer.h"
 #include "HeroInfoWindow.h"
 
+#include "../CPlayerInterface.h"
 #include "../GameEngine.h"
 #include "../gui/CursorHandler.h"
 #include "../gui/WindowHandler.h"
@@ -25,7 +26,9 @@
 #include "../windows/CSpellWindow.h"
 
 #include "../../lib/CConfigHandler.h"
+#include "../../lib/StartInfo.h"
 #include "../../lib/battle/CPlayerBattleCallback.h"
+#include "../../lib/callback/CCallback.h"
 #include "../../lib/entities/hero/CHero.h"
 #include "../../lib/entities/hero/CHeroClass.h"
 #include "../../lib/gameState/InfoAboutArmy.h"
@@ -117,6 +120,14 @@ void BattleHero::heroLeftClicked()
 	if(owner.actionsController->heroSpellcastingModeActive()) //we are casting a spell
 		return;
 
+	CPlayerInterface * playerInterface = owner.getCurrentPlayerInterface();
+	if(hero && hero->getOwner() != playerInterface->playerID && playerInterface->cb->getStartInfo()->extraOptionsInfo.revealEnemyHeroes)
+	{
+		ENGINE->cursor().set(Cursor::Map::POINTER);
+		playerInterface->openHeroWindow(hero);
+		return;
+	}
+
 	if(!hero || !owner.makingTurn())
 		return;
 
@@ -129,6 +140,14 @@ void BattleHero::heroLeftClicked()
 
 void BattleHero::heroRightClicked() const
 {
+	CPlayerInterface * playerInterface = owner.getCurrentPlayerInterface();
+	if(hero && hero->getOwner() != playerInterface->playerID && ENGINE->isKeyboardAltDown()
+		&& playerInterface->cb->getStartInfo()->extraOptionsInfo.revealEnemyHeroes)
+	{
+		playerInterface->openHeroWindow(hero);
+		return;
+	}
+
 	if(settings["battle"]["stickyHeroInfoWindows"].Bool())
 		return;
 

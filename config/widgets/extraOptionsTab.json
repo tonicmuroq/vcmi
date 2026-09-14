@@ -62,6 +62,41 @@
 					"callback" : "setRecordGame",
 					"help" : "vcmi.optionsTab.recordGame",
 					"selected" : false
+				},
+				{
+					"name": "buttonRevealMageGuildSpells",
+					"image": "lobby/checkbox",
+					"callback" : "setRevealMageGuildSpells",
+					"help" : "vcmi.optionsTab.revealMageGuildSpells",
+					"selected" : false
+				},
+				{
+					"name": "buttonRevealHiddenRewards",
+					"image": "lobby/checkbox",
+					"callback" : "setRevealHiddenRewards",
+					"help" : "vcmi.optionsTab.revealHiddenRewards",
+					"selected" : false
+				},
+				{
+					"name": "buttonRevealMonsterInfo",
+					"image": "lobby/checkbox",
+					"callback" : "setRevealMonsterInfo",
+					"help" : "vcmi.optionsTab.revealMonsterInfo",
+					"selected" : false
+				},
+				{
+					"name": "buttonRevealHiddenEvents",
+					"image": "lobby/checkbox",
+					"callback" : "setRevealHiddenEvents",
+					"help" : "vcmi.optionsTab.revealHiddenEvents",
+					"selected" : false
+				},
+				{
+					"name": "buttonRevealEnemyHeroes",
+					"image": "lobby/checkbox",
+					"callback" : "setRevealEnemyHeroes",
+					"help" : "vcmi.optionsTab.revealEnemyHeroes",
+					"selected" : false
 				}
 			]
 		},
@@ -92,6 +127,41 @@
 					"alignment": "left",
 					"color": "yellow",
 					"text": "vcmi.optionsTab.recordGame.hover"
+				},
+				{
+					"name": "labelRevealMageGuildSpells",
+					"font": "small",
+					"alignment": "left",
+					"color": "yellow",
+					"text": "vcmi.optionsTab.revealMageGuildSpells.hover"
+				},
+				{
+					"name": "labelRevealHiddenRewards",
+					"font": "small",
+					"alignment": "left",
+					"color": "yellow",
+					"text": "vcmi.optionsTab.revealHiddenRewards.hover"
+				},
+				{
+					"name": "labelRevealMonsterInfo",
+					"font": "small",
+					"alignment": "left",
+					"color": "yellow",
+					"text": "vcmi.optionsTab.revealMonsterInfo.hover"
+				},
+				{
+					"name": "labelRevealHiddenEvents",
+					"font": "small",
+					"alignment": "left",
+					"color": "yellow",
+					"text": "vcmi.optionsTab.revealHiddenEvents.hover"
+				},
+				{
+					"name": "labelRevealEnemyHeroes",
+					"font": "small",
+					"alignment": "left",
+					"color": "yellow",
+					"text": "vcmi.optionsTab.revealEnemyHeroes.hover"
 				}
 			]
 		}

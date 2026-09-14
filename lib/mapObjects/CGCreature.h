@@ -67,6 +67,10 @@ public:
 	/// -1 means the map did not set it, in which case the global setting applies.
 	int getEffectiveJoiningPercentage() const;
 
+	MetaString getEncounterDecisionText(const CGHeroInstance * hero) const;
+	MetaString getThreatText(const CGHeroInstance * hero) const;
+	std::vector<std::pair<CreatureID, TQuantity>> getEncounterStacks(const CGHeroInstance * hero) const;
+
 	//stack formation depends on position,
 	bool containsUpgradedStack() const;
 	int getNumberOfStacks(const CGHeroInstance *hero) const;

@@ -694,7 +694,7 @@ void SeerHut::setSeerName(CMap & map, const std::string & newName)
 
 MetaString QuestSource::buildText(PlayerColor player, bool onHover) const
 {
-	bool questActive = !isEmpty() && getQuest().activeForPlayers.count(player);
+	bool questActive = !isEmpty() && (revealsHiddenContents() || getQuest().activeForPlayers.count(player));
 
 	MetaString text;
 	std::string seer = getQuestGiverName();
@@ -730,10 +730,30 @@ std::vector<Component> QuestSource::getPopupComponents(const CGHeroInstance * he
 
 std::vector<Component> QuestSource::getPopupComponents(PlayerColor player, const CGHeroInstance * hero) const
 {
+	std::vector<Component> result = getPopupGuards(player, hero);
+	vstd::concatenate(result, getPopupRewards(player, hero));
+	return result;
+}
+
+std::vector<Component> QuestSource::getPopupGuards(PlayerColor player, const CGHeroInstance * hero) const
+{
 	std::vector<Component> result;
-	if (!isEmpty() && getQuest().activeForPlayers.count(player))
+	if (!isEmpty() && (revealsHiddenContents() || getQuest().activeForPlayers.count(player)))
 		getQuest().loadComponents(result, hero);
 	return result;
+}
+
+std::vector<Component> QuestSource::getPopupRewards(PlayerColor player, const CGHeroInstance * hero) const
+{
+	if (!revealsHiddenContents())
+		return {};
+
+	return CRewardableObject::getPopupRewards(player, hero);
+}
+
+std::string QuestSource::getPopupGuardsTextID() const
+{
+	return "vcmi.adventureMap.revealed.quest";
 }
 
 void QuestSource::setPropertyDer(ObjProperty what, ObjPropertyID identifier)

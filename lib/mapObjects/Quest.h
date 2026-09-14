@@ -242,6 +242,9 @@ public:
 	std::vector<Component> getPopupComponents(PlayerColor player) const override;
 	std::vector<Component> getPopupComponents(const CGHeroInstance * hero) const override;
 	std::vector<Component> getPopupComponents(PlayerColor player, const CGHeroInstance * hero) const;
+	std::vector<Component> getPopupGuards(PlayerColor player, const CGHeroInstance * hero) const override;
+	std::vector<Component> getPopupRewards(PlayerColor player, const CGHeroInstance * hero) const override;
+	std::string getPopupGuardsTextID() const override;
 
 	/// Remembers the name and portrait of the hero a "be a specific hero" mission asks for, as placed on the map
 	void resolveRequiredHero(const CMap & map);

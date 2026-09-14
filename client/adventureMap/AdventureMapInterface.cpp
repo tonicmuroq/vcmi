@@ -46,6 +46,7 @@
 #include "../../lib/texts/CGeneralTextHandler.h"
 #include "../../lib/mapObjects/MapObjectDrawOrder.h"
 #include "../../lib/mapObjects/CGHeroInstance.h"
+#include "../../lib/mapObjects/CGPandoraBox.h"
 #include "../../lib/mapObjects/CGTownInstance.h"
 #include "../../lib/mapObjects/MiscObjects.h"
 #include "../../lib/pathfinder/CGPathNode.h"
@@ -593,6 +594,22 @@ const CGObjectInstance* AdventureMapInterface::getActiveObject(const int3 &mapPo
 	return MapObjectDrawOrder::findTopObject(*GAME->map().getMap(), bobjs, mapPos);
 }
 
+const CGObjectInstance* AdventureMapInterface::getHiddenEvent(const int3 &mapPos)
+{
+	if(!GAME->interface()->cb->getStartInfo()->extraOptionsInfo.revealHiddenEvents)
+		return nullptr;
+
+	// events are hidden from the player in the regular object callbacks, so the client copy of the map is read directly
+	const CMap * map = GAME->map().getMap();
+	for(const auto & objectID : map->getTile(mapPos).visitableObjects)
+	{
+		const auto * event = dynamic_cast<const CGEvent *>(map->getObject(objectID));
+		if(event && event->willTriggerFor(GAME->interface()->playerID))
+			return event;
+	}
+	return nullptr;
+}
+
 void AdventureMapInterface::onTileLeftClicked(const int3 &targetPosition)
 {
 	if(!shortcuts->optionMapViewActive())
@@ -944,6 +961,16 @@ void AdventureMapInterface::onTileRightClicked(const int3 &mapPos)
 	}
 
 	const CGObjectInstance * obj = getActiveObject(mapPos);
+	if(!obj)
+		obj = getHiddenEvent(mapPos);
+
+	if(obj && obj->ID == Obj::HERO && obj->tempOwner != GAME->interface()->playerID && ENGINE->isKeyboardAltDown()
+		&& GAME->interface()->cb->getStartInfo()->extraOptionsInfo.revealEnemyHeroes)
+	{
+		GAME->interface()->openHeroWindow(dynamic_cast<const CGHeroInstance *>(obj));
+		return;
+	}
+
 	if(!obj)
 	{
 		// Bare or undiscovered terrain
