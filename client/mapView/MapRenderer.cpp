@@ -33,6 +33,7 @@
 #include "../../lib/RoadHandler.h"
 #include "../../lib/TerrainHandler.h"
 #include "../../lib/mapObjects/CGHeroInstance.h"
+#include "../../lib/mapObjects/CGPandoraBox.h"
 #include "../../lib/mapObjects/MiscObjects.h"
 #include "../../lib/mapObjects/ObjectTemplate.h"
 #include "../../lib/mapping/CMap.h"
@@ -694,10 +695,20 @@ MapRendererOverlay::MapRendererOverlay()
 	, imageBlocked(ENGINE->renderHandler().loadImage(ImagePath::builtin("debug/blocked"), EImageBlitMode::COLORKEY))
 	, imageVisitable(ENGINE->renderHandler().loadImage(ImagePath::builtin("debug/visitable"), EImageBlitMode::COLORKEY))
 	, imageSpellRange(ENGINE->renderHandler().loadImage(ImagePath::builtin("debug/spellRange"), EImageBlitMode::COLORKEY))
-	, imageEvent(ENGINE->renderHandler().loadAnimation(AnimationPath::builtin("AVZevnt0"), EImageBlitMode::COLORKEY)->getImage(0))
+	, imageEvent(ENGINE->renderHandler().loadImage(ImagePath::builtin("debug/event"), EImageBlitMode::COLORKEY))
 	, imageGrail(ENGINE->renderHandler().loadAnimation(AnimationPath::builtin("AVZgrail"), EImageBlitMode::COLORKEY)->getImage(0))
 	, grailPos(GAME->server().client->gameState().getMap().grailPos)
 {
+}
+
+// the showInvisible cheat marks every event, the lobby option only those the player can trigger
+static bool shouldMarkEvent(const CGObjectInstance * object, const PlayerColor & player, bool markAll)
+{
+	if(markAll)
+		return true;
+
+	const auto * event = dynamic_cast<const CGEvent *>(object);
+	return event && event->willTriggerFor(player);
 }
 
 void MapRendererOverlay::renderTile(IMapRendererContext & context, Canvas & target, const int3 & coordinates)
@@ -705,7 +716,13 @@ void MapRendererOverlay::renderTile(IMapRendererContext & context, Canvas & targ
 	if(context.showGrid())
 		target.draw(imageGrid, Point(0,0));
 
-	if(GAME->interface()->cb->getStartInfo()->extraOptionsInfo.cheatsAllowed && (context.showVisitable() || context.showBlocked() || context.showInvisible()))
+	const auto & extraOptions = GAME->interface()->cb->getStartInfo()->extraOptionsInfo;
+	const PlayerColor playerID = GAME->interface()->playerID;
+	bool cheatOverlay = extraOptions.cheatsAllowed && (context.showVisitable() || context.showBlocked() || context.showInvisible());
+	bool markAllEvents = cheatOverlay && context.showInvisible();
+	bool markEvents = extraOptions.revealHiddenEvents || markAllEvents;
+
+	if(cheatOverlay || markEvents)
 	{
 		bool blocking = false;
 		bool visitable = false;
@@ -714,22 +731,22 @@ void MapRendererOverlay::renderTile(IMapRendererContext & context, Canvas & targ
 		{
 			const auto * object = context.getObject(objectID);
 
-			if(object->ID == Obj::EVENT && context.showInvisible())
+			if(object->ID == Obj::EVENT && markEvents && shouldMarkEvent(object, playerID, markAllEvents))
 				target.draw(imageEvent, Point(0,0));
-			
-			if(grailPos == coordinates && context.showInvisible())
+
+			if(grailPos == coordinates && cheatOverlay && context.showInvisible())
 				target.draw(imageGrail, Point(0,0));
 
-			if(context.objectTransparency(objectID, coordinates) > 0 && !context.isActiveHero(object))
+			if(cheatOverlay && context.objectTransparency(objectID, coordinates) > 0 && !context.isActiveHero(object))
 			{
 				visitable |= object->visitableAt(coordinates);
 				blocking |= object->blockingAt(coordinates);
 			}
 		}
 
-		if (context.showBlocked() && blocking)
+		if (cheatOverlay && context.showBlocked() && blocking)
 			target.draw(imageBlocked, Point(0,0));
-		if (context.showVisitable() && visitable)
+		if (cheatOverlay && context.showVisitable() && visitable)
 			target.draw(imageVisitable, Point(0,0));
 	}
 

@@ -13,6 +13,7 @@
 
 #include "../CPlayerState.h"
 #include "../IGameSettings.h"
+#include "../StartInfo.h"
 #include "../battle/BattleLayout.h"
 #include "../callback/IGameInfoCallback.h"
 #include "../callback/IGameEventCallback.h"
@@ -289,49 +290,76 @@ MetaString CRewardableObject::getDescriptionMessage(PlayerColor player, const CG
 	return getGenericDescriptionMessage();
 }
 
-std::vector<Component> CRewardableObject::getPopupComponentsImpl(PlayerColor player, const CGHeroInstance * hero) const
+bool CRewardableObject::revealsHiddenContents() const
 {
-	if (!wasScouted(player))
+	// Guarded objects, Pandora's Box and map events hide their rewards. Lobby options can reveal them without scouting first
+	const auto & extraOptions = cb->getStartInfo()->extraOptionsInfo;
+	return extraOptions.revealHiddenRewards || (ID == Obj::EVENT && extraOptions.revealHiddenEvents);
+}
+
+std::vector<Component> CRewardableObject::getPopupGuards(PlayerColor player, const CGHeroInstance * hero) const
+{
+	bool revealEvent = ID == Obj::EVENT && cb->getStartInfo()->extraOptionsInfo.revealHiddenEvents;
+
+	if (!isGuarded())
 		return {};
 
-	if (isGuarded())
-	{
-		if (!cb->getSettings().getBoolean(EGameSettings::BANKS_SHOW_GUARDS_COMPOSITION))
-			return {};
+	if (!revealsHiddenContents() && !wasScouted(player))
+		return {};
 
-		std::map<CreatureID, int> guardsAmounts;
-		std::vector<Component> result;
+	if (!revealEvent && !cb->getSettings().getBoolean(EGameSettings::BANKS_SHOW_GUARDS_COMPOSITION))
+		return {};
 
-		for (auto const & slot : Slots())
-			if (slot.second)
-				guardsAmounts[slot.second->getCreatureID()] += slot.second->getCount();
+	std::map<CreatureID, int> guardsAmounts;
 
-		for (auto const & guard : guardsAmounts)
-		{
-			Component comp(ComponentType::CREATURE, guard.first, guard.second);
-			result.push_back(comp);
-		}
-		return result;
-	}
-	else
-	{
-		if (!configuration.showScoutedPreview)
-			return {};
+	for (auto const & slot : Slots())
+		if (slot.second)
+			guardsAmounts[slot.second->getCreatureID()] += slot.second->getCount();
 
-		auto rewardIndices = getAvailableRewards(hero, Rewardable::EEventType::EVENT_FIRST_VISIT);
-		if (rewardIndices.empty() && !configuration.info.empty())
-		{
-			// Object has valid config, but current hero has no rewards that he can receive.
-			// Usually this happens if hero has already visited this object -> show reward using context without any hero
-			// since reward may be context-sensitive - e.g. Witch Hut that gives 1 skill, but always at basic level
-			return loadComponents(nullptr, {0});
-		}
+	std::vector<Component> result;
+	for (auto const & guard : guardsAmounts)
+		result.emplace_back(ComponentType::CREATURE, guard.first, guard.second);
 
-		if (rewardIndices.empty())
-			return {};
+	return result;
+}
 
-		return loadComponents(hero, rewardIndices);
-	}
+std::vector<Component> CRewardableObject::getPopupRewards(PlayerColor player, const CGHeroInstance * hero) const
+{
+	bool revealContents = revealsHiddenContents();
+
+	if (!revealContents && !wasScouted(player))
+		return {};
+
+	if (isGuarded() && !revealContents)
+		return {};
+
+	if (!isGuarded() && !configuration.showScoutedPreview && !revealContents)
+		return {};
+
+	// An object revealed without being scouted shows what it holds, not what this hero would get from it
+	// right now - a hero at full mana would otherwise see an event granting 25 mana as "+0"
+	if (revealContents && !wasScouted(player))
+		hero = nullptr;
+
+	auto rewardIndices = getAvailableRewards(hero, Rewardable::EEventType::EVENT_FIRST_VISIT);
+
+	// Object has valid config, but current hero has no rewards that he can receive.
+	// Usually this happens if hero has already visited this object -> show reward using context without any hero
+	// since reward may be context-sensitive - e.g. Witch Hut that gives 1 skill, but always at basic level
+	if (rewardIndices.empty() && !configuration.info.empty())
+		return loadComponents(nullptr, {0});
+
+	if (rewardIndices.empty())
+		return {};
+
+	return loadComponents(hero, rewardIndices);
+}
+
+std::vector<Component> CRewardableObject::getPopupComponentsImpl(PlayerColor player, const CGHeroInstance * hero) const
+{
+	std::vector<Component> result = getPopupGuards(player, hero);
+	vstd::concatenate(result, getPopupRewards(player, hero));
+	return result;
 }
 
 std::vector<Component> CRewardableObject::getPopupComponents(PlayerColor player) const

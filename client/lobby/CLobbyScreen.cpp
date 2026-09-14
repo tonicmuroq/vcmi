@@ -430,6 +430,11 @@ void CLobbyScreen::updateAfterStateChange()
 		info.cheatsAllowed = isMultiplayer ? persistentStorage["startExtraOptions"]["multiPlayer"]["cheatsAllowed"].Bool() : !persistentStorage["startExtraOptions"]["singlePlayer"]["cheatsNotAllowed"].Bool();
 		info.unlimitedReplay = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["unlimitedReplay"].Bool();
 		info.recordGame = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["recordGame"].Bool();
+		info.revealMageGuildSpells = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["revealMageGuildSpells"].Bool();
+		info.revealHiddenRewards = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["revealHiddenRewards"].Bool();
+		info.revealMonsterInfo = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["revealMonsterInfo"].Bool();
+		info.revealHiddenEvents = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["revealHiddenEvents"].Bool();
+		info.revealEnemyHeroes = persistentStorage["startExtraOptions"][isMultiplayer ? "multiPlayer" : "singlePlayer"]["revealEnemyHeroes"].Bool();
 		if(info != GAME->server().si->extraOptionsInfo)
 			GAME->server().setExtraOptionsInfo(info);
 	}

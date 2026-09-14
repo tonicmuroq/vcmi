@@ -30,6 +30,8 @@
 #include "CMessage.h"
 
 #include "../../lib/CConfigHandler.h"
+#include "../../lib/IGameSettings.h"
+#include "../../lib/StartInfo.h"
 #include "../../lib/callback/CCallback.h"
 #include "../../lib/gameState/InfoAboutArmy.h"
 #include "../../lib/mapObjects/CGCreature.h"
@@ -128,7 +130,15 @@ CInfoWindow::CInfoWindow(const std::string & Text, PlayerColor player, const TCo
 	}
 
 	if(!comps.empty())
-		components = std::make_shared<CComponentBox>(comps, Rect(0,0,0,0));
+	{
+		// A window with many components (e.g. Pandora's Box that reveals all its spells) does not fit
+		// on screen in the default 4-wide grid, so lay such windows out wider
+		int componentsInRow = std::clamp<int>(static_cast<int>((comps.size() + 5) / 6), CComponentBox::defaultComponentsInRow, 8);
+
+		components = std::make_shared<CComponentBox>(comps, Rect(0,0,0,0),
+			CComponentBox::defaultBetweenImagesMin, CComponentBox::defaultBetweenSubtitlesMin,
+			CComponentBox::defaultBetweenRows, componentsInRow);
+	}
 
 	CMessage::drawIWindow(this, Text, player);
 }
@@ -214,12 +224,33 @@ void CRClickPopup::createAndPush(const std::string & txt, const std::shared_ptr<
 	createAndPush(txt, intComps);
 }
 
+// a lobby option can reveal contents this object would normally keep hidden - those get their own,
+// sectioned popup so that guards and rewards are not one undistinguishable row of icons
+static bool showsRevealedContents(const CGObjectInstance * obj)
+{
+	if(!settings["general"]["enableUiEnhancements"].Bool())
+		return false;
+
+	const auto & extraOptions = GAME->interface()->cb->getStartInfo()->extraOptionsInfo;
+	if(!extraOptions.revealHiddenRewards && !(obj->ID == Obj::EVENT && extraOptions.revealHiddenEvents))
+		return false;
+
+	PlayerColor player = GAME->interface()->playerID;
+	const auto * hero = GAME->interface()->localState->getCurrentHero();
+
+	return !obj->getPopupGuards(player, hero).empty() || !obj->getPopupRewards(player, hero).empty();
+}
+
 void CRClickPopup::createAndPush(const CGObjectInstance * obj, const Point & p, ETextAlignment alignment)
 {
 	auto iWin = createCustomInfoWindow(p, obj); //try get custom infowindow for this obj
 	if(iWin)
 	{
 		ENGINE->windows().pushWindow(iWin);
+	}
+	else if(showsRevealedContents(obj))
+	{
+		ENGINE->windows().createAndPushWindow<RevealedContentsPopup>(p, obj, GAME->interface()->localState->getCurrentHero());
 	}
 	else
 	{
@@ -232,9 +263,17 @@ void CRClickPopup::createAndPush(const CGObjectInstance * obj, const Point & p, 
 				components = obj->getPopupComponents(GAME->interface()->playerID);
 		}
 
+		// Objects that reveal a lot of content at once (e.g. Pandora's Box with all spells of a school)
+		// would not fit on screen with default icon size
+		CComponent::ESize componentSize = CComponent::medium;
+		if(components.size() > 24)
+			componentSize = CComponent::tiny;
+		else if(components.size() > 8)
+			componentSize = CComponent::small;
+
 		std::vector<std::shared_ptr<CComponent>> guiComponents;
 		for(auto & component : components)
-			guiComponents.push_back(std::make_shared<CComponent>(component, CComponent::medium));
+			guiComponents.push_back(std::make_shared<CComponent>(component, componentSize));
 
 		if(GAME->interface()->localState->getCurrentHero())
 			CRClickPopup::createAndPush(obj->getPopupText(GAME->interface()->localState->getCurrentHero()).toString(&GAME->translator()), guiComponents);
@@ -301,16 +340,94 @@ CInfoBoxPopup::CInfoBoxPopup(Point position, const CGTownInstance * town)
 	if(settings["general"]["enableUiEnhancements"].Bool())
 		background->setPlayerColor(town->getOwner());
 
+	if(GAME->interface()->cb->getStartInfo()->extraOptionsInfo.revealMageGuildSpells)
+		showMageGuildSpells(town);
+
 	addUsedEvents(DRAG_POPUP);
 
 	fitToScreen(10);
+}
+
+void CInfoBoxPopup::showMageGuildSpells(const CGTownInstance * town)
+{
+	OBJECT_CONSTRUCTION;
+
+	// TOWNQVBK is 194x186 and contains its own frame: 9px on the sides, 10px on top and bottom.
+	// The window is extended by re-using slices of that frame, so that spells end up inside the original frame
+	constexpr int frameSide = 9;
+	constexpr int frameHeight = 10;
+	constexpr int backgroundHeight = 186;
+	// vertical offset of a frame slice that contains no corners and can be repeated
+	constexpr int frameSliceStart = 20;
+
+	// SpellInt.def frames are 48x36 - too wide to fit five of them next to each other in this popup
+	static const Point iconSize(28, 21);
+	constexpr int iconMargin = 3;
+
+	int maxLevel = std::min<int>(town->getTown()->mageLevel, town->spells.size());
+
+	// Spells of every mage guild level are rolled on map start, so they are known even before the guild is built
+	std::vector<std::vector<SpellID>> rows;
+	for(int level = 1; level <= maxLevel; ++level)
+	{
+		const auto & levelSpells = town->spells[level - 1];
+		int spellsCount = std::min<int>(town->spellsAtLevel(level, false), levelSpells.size());
+
+		if(spellsCount > 0)
+			rows.emplace_back(levelSpells.begin(), levelSpells.begin() + spellsCount);
+	}
+
+	if(rows.empty())
+		return;
+
+	int addedHeight = static_cast<int>(rows.size()) * (iconSize.y + iconMargin) + iconMargin;
+	int contentBottom = backgroundHeight - frameHeight;
+	ImagePath backgroundPath = ImagePath::builtin("TOWNQVBK");
+
+	// cut away the bottom frame of the original background - it is drawn again below the spells
+	background->srcRect = Rect(0, 0, pos.w, contentBottom);
+	background->pos.h = contentBottom;
+
+	spellsBackground = std::make_shared<CFilledTexture>(ImagePath::builtin("DIBOXBCK"), Rect(frameSide, contentBottom, pos.w - 2 * frameSide, addedHeight));
+	frameLeft = std::make_shared<CPicture>(backgroundPath, Rect(0, frameSliceStart, frameSide, addedHeight), 0, contentBottom);
+	frameRight = std::make_shared<CPicture>(backgroundPath, Rect(pos.w - frameSide, frameSliceStart, frameSide, addedHeight), pos.w - frameSide, contentBottom);
+	frameBottom = std::make_shared<CPicture>(backgroundPath, Rect(0, contentBottom, pos.w, frameHeight), 0, contentBottom + addedHeight);
+
+	// the original background is player-colored in the constructor - the added frame slices must match it
+	if(settings["general"]["enableUiEnhancements"].Bool())
+	{
+		frameLeft->setPlayerColor(town->getOwner());
+		frameRight->setPlayerColor(town->getOwner());
+		frameBottom->setPlayerColor(town->getOwner());
+	}
+
+	for(size_t row = 0; row < rows.size(); ++row)
+	{
+		int rowSize = static_cast<int>(rows[row].size());
+		int rowWidth = rowSize * iconSize.x + (rowSize - 1) * iconMargin;
+		int rowX = (pos.w - rowWidth) / 2;
+		int rowY = contentBottom + iconMargin + static_cast<int>(row) * (iconSize.y + iconMargin);
+
+		for(int i = 0; i < rowSize; ++i)
+		{
+			auto icon = std::make_shared<CAnimImage>(AnimationPath::builtin("SpellInt"), rows[row][i].getNum() + 1, 0, rowX + i * (iconSize.x + iconMargin), rowY);
+			icon->setScale(iconSize);
+			spellIcons.push_back(icon);
+		}
+	}
+
+	pos.h = contentBottom + addedHeight + frameHeight;
+	updateShadow();
 }
 
 CInfoBoxPopup::CInfoBoxPopup(Point position, const CGHeroInstance * hero)
 	: AdventureMapPopup(RCLICK_POPUP | PLAYER_COLORED, ImagePath::builtin("HEROQVBK"), position)
 {
 	InfoAboutHero iah;
-	GAME->interface()->cb->getHeroInfo(hero, iah, GAME->interface()->localState->getCurrentArmy()); //todo: should this be nearest hero?
+	if(GAME->interface()->cb->getStartInfo()->extraOptionsInfo.revealEnemyHeroes)
+		iah.initFromHero(hero, InfoAboutHero::EInfoLevel::INBATTLE);
+	else
+		GAME->interface()->cb->getHeroInfo(hero, iah, GAME->interface()->localState->getCurrentArmy()); //todo: should this be nearest hero?
 
 	OBJECT_CONSTRUCTION;
 	tooltip = std::make_shared<CHeroTooltip>(Point(9, 10), iah);
@@ -357,6 +474,145 @@ CInfoBoxPopup::CInfoBoxPopup(Point position, const CGCreature * creature)
 	addUsedEvents(DRAG_POPUP);
 
 	fitToScreen(10);
+}
+
+CreatureEncounterPopup::CreatureEncounterPopup(const Point & position, const CGCreature * creature, const CGHeroInstance * hero)
+	: AdventureMapPopup(BORDERED | RCLICK_POPUP)
+{
+	OBJECT_CONSTRUCTION;
+
+	constexpr int sideMargin = 24;
+	constexpr int topMargin = 14;
+	constexpr int bottomMargin = 18;
+	constexpr int gap = 12;
+	constexpr int minTextWidth = 250;
+	constexpr int betweenStacks = 12;
+
+	filledBackground = std::make_shared<CFilledTexture>(ImagePath::builtin("DIBOXBCK"), Rect(0, 0, 0, 0));
+
+	std::vector<std::shared_ptr<CComponent>> components;
+	// subtitle is only the stack size - the creature name is already the window title
+	for(const auto & [creatureID, count] : creature->getEncounterStacks(hero))
+		components.push_back(std::make_shared<CComponent>(ComponentType::CREATURE, creatureID, std::to_string(count), CComponent::medium));
+
+	// all stacks go in one row - the split never exceeds 7 stacks
+	stacks = std::make_shared<CComponentBox>(components, Rect(0, 0, 0, 0), betweenStacks, CComponentBox::defaultBetweenSubtitlesMin, CComponentBox::defaultBetweenRows, 7);
+
+	MetaString title;
+	title.appendNamePlural(creature->getCreatureID());
+
+	MetaString description = creature->getEncounterDecisionText(hero);
+	if(settings["general"]["enableUiEnhancements"].Bool())
+		description.append(creature->getThreatText(hero));
+
+	int contentWidth = std::max(stacks->pos.w, minTextWidth);
+	text = std::make_shared<CTextBox>(description.toString(&GAME->translator()), Rect(0, 0, contentWidth, 200), 0, FONT_MEDIUM, ETextAlignment::CENTER, Colors::WHITE);
+	if(!text->slider)
+		text->resize(Point(contentWidth, text->label->textSize.y));
+
+	// CLabel computes its own size only for TOPLEFT alignment, so center it by hand below
+	labelTitle = std::make_shared<CLabel>(0, 0, FONT_BIG, ETextAlignment::TOPLEFT, Colors::WHITE, title.toString(&GAME->translator()));
+	vstd::amax(contentWidth, labelTitle->pos.w);
+
+	pos.w = contentWidth + 2 * sideMargin;
+	pos.h = topMargin + labelTitle->pos.h + gap + stacks->pos.h + gap + text->pos.h + bottomMargin;
+	filledBackground->pos = Rect(pos);
+
+	// children were created at the window origin, so offsets are relative to it
+	labelTitle->moveBy(Point((pos.w - labelTitle->pos.w) / 2, topMargin));
+	stacks->moveBy(Point((pos.w - stacks->pos.w) / 2, topMargin + labelTitle->pos.h + gap));
+	text->moveBy(Point((pos.w - text->pos.w) / 2, topMargin + labelTitle->pos.h + gap + stacks->pos.h + gap));
+
+	center(position);
+	fitToScreen(10);
+	updateShadow();
+	addUsedEvents(DRAG_POPUP);
+}
+
+void RevealedContentsPopup::addSection(const std::string & textID, const std::vector<Component> & components)
+{
+	if(components.empty())
+		return;
+
+	// a fully revealed Pandora's Box can hold every spell of a school - those do not fit on screen at full size
+	CComponent::ESize componentSize = CComponent::medium;
+	if(components.size() > 24)
+		componentSize = CComponent::tiny;
+	else if(components.size() > 8)
+		componentSize = CComponent::small;
+
+	std::vector<std::shared_ptr<CComponent>> guiComponents;
+	for(const auto & component : components)
+		guiComponents.push_back(std::make_shared<CComponent>(component, componentSize));
+
+	int componentsInRow = std::clamp<int>(static_cast<int>((components.size() + 5) / 6), CComponentBox::defaultComponentsInRow, 8);
+
+	sectionLabels.push_back(std::make_shared<CLabel>(0, 0, FONT_MEDIUM, ETextAlignment::TOPLEFT, Colors::YELLOW, MetaString::createFromTextID(textID).toString(&GAME->translator())));
+	sectionBoxes.push_back(std::make_shared<CComponentBox>(
+		guiComponents,
+		Rect(0, 0, 0, 0),
+		CComponentBox::defaultBetweenImagesMin,
+		CComponentBox::defaultBetweenSubtitlesMin,
+		CComponentBox::defaultBetweenRows,
+		componentsInRow
+	));
+}
+
+RevealedContentsPopup::RevealedContentsPopup(const Point & position, const CGObjectInstance * object, const CGHeroInstance * hero)
+	: AdventureMapPopup(BORDERED | RCLICK_POPUP)
+{
+	OBJECT_CONSTRUCTION;
+
+	constexpr int sideMargin = 24;
+	constexpr int topMargin = 14;
+	constexpr int bottomMargin = 18;
+	constexpr int gap = 10;
+	constexpr int minTextWidth = 250;
+
+	PlayerColor player = GAME->interface()->playerID;
+
+	filledBackground = std::make_shared<CFilledTexture>(ImagePath::builtin("DIBOXBCK"), Rect(0, 0, 0, 0));
+
+	addSection(object->getPopupGuardsTextID(), object->getPopupGuards(player, hero));
+	addSection("vcmi.adventureMap.revealed.rewards", object->getPopupRewards(player, hero));
+
+	int contentWidth = minTextWidth;
+	for(const auto & label : sectionLabels)
+		vstd::amax(contentWidth, label->pos.w);
+	for(const auto & box : sectionBoxes)
+		vstd::amax(contentWidth, box->pos.w);
+
+	MetaString description = hero ? object->getPopupText(hero) : object->getPopupText(player);
+	text = std::make_shared<CTextBox>(description.toString(&GAME->translator()), Rect(0, 0, contentWidth, 300), 0, FONT_MEDIUM, ETextAlignment::CENTER, Colors::WHITE);
+	if(!text->slider)
+		text->resize(Point(contentWidth, text->label->textSize.y));
+
+	int contentHeight = text->pos.h;
+	for(size_t i = 0; i < sectionBoxes.size(); ++i)
+		contentHeight += gap + sectionLabels[i]->pos.h + sectionBoxes[i]->pos.h;
+
+	pos.w = contentWidth + 2 * sideMargin;
+	pos.h = topMargin + contentHeight + bottomMargin;
+	filledBackground->pos = Rect(pos);
+
+	// children were created at the window origin, so offsets are relative to it
+	int offsetY = topMargin;
+	text->moveBy(Point((pos.w - text->pos.w) / 2, offsetY));
+	offsetY += text->pos.h;
+
+	for(size_t i = 0; i < sectionBoxes.size(); ++i)
+	{
+		offsetY += gap;
+		sectionLabels[i]->moveBy(Point((pos.w - sectionLabels[i]->pos.w) / 2, offsetY));
+		offsetY += sectionLabels[i]->pos.h;
+		sectionBoxes[i]->moveBy(Point((pos.w - sectionBoxes[i]->pos.w) / 2, offsetY));
+		offsetY += sectionBoxes[i]->pos.h;
+	}
+
+	center(position);
+	fitToScreen(10);
+	updateShadow();
+	addUsedEvents(DRAG_POPUP);
 }
 
 MinimapWithIcons::MinimapWithIcons(const Point & position)
@@ -585,7 +841,12 @@ CRClickPopup::createCustomInfoWindow(Point position, const CGObjectInstance * sp
 		case Obj::TOWN:
 			return std::make_shared<CInfoBoxPopup>(position, dynamic_cast<const CGTownInstance *>(specific));
 		case Obj::MONSTER:
+		{
+			const auto * hero = GAME->interface()->localState->getCurrentHero();
+			if(hero && GAME->interface()->cb->getStartInfo()->extraOptionsInfo.revealMonsterInfo)
+				return std::make_shared<CreatureEncounterPopup>(position, dynamic_cast<const CGCreature *>(specific), hero);
 			return std::make_shared<CInfoBoxPopup>(position, dynamic_cast<const CGCreature *>(specific));
+		}
 		case Obj::GARRISON:
 		case Obj::GARRISON2:
 			return std::make_shared<CInfoBoxPopup>(position, dynamic_cast<const CGGarrison *>(specific));

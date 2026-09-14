@@ -152,6 +152,11 @@ public:
 	virtual std::vector<Component> getPopupComponents(PlayerColor player) const;
 	virtual std::vector<Component> getPopupComponents(const CGHeroInstance * hero) const;
 
+	/// getPopupComponents split into its two halves, so a popup can label them separately
+	virtual std::vector<Component> getPopupGuards(PlayerColor player, const CGHeroInstance * hero) const;
+	virtual std::vector<Component> getPopupRewards(PlayerColor player, const CGHeroInstance * hero) const;
+	virtual std::string getPopupGuardsTextID() const;
+
 	const IOwnableObject * asOwnable() const override;
 
 	/** OVERRIDES OF IObjectInterface **/

@@ -15,6 +15,7 @@
 
 class CLabel;
 class CAnimImage;
+class CGHeroInstance;
 
 struct InfoAboutHero;
 
@@ -24,12 +25,16 @@ private:
 	std::shared_ptr<CPicture> background;
 	std::vector<std::shared_ptr<CLabel>> labels;
 	std::vector<std::shared_ptr<CAnimImage>> icons;
+	const CGHeroInstance * revealedHero = nullptr;
 
 public:
 	HeroInfoBasicPanel(const InfoAboutHero & hero, const Point * position, bool initializeBackground = true);
 
 	void initializeData(const InfoAboutHero & hero);
 	void update(const InfoAboutHero & updatedInfo);
+	/// right click on the panel opens the full hero screen of this hero
+	void revealHero(const CGHeroInstance * hero);
+	void showPopupWindow(const Point & cursorPosition) override;
 };
 
 class HeroInfoWindow : public CWindowObject

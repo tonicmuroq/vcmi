@@ -44,6 +44,9 @@ protected:
 	MetaString getDescriptionMessage(PlayerColor player, const CGHeroInstance * hero) const;
 	std::vector<Component> getPopupComponentsImpl(PlayerColor player, const CGHeroInstance * hero) const;
 
+	/// true if a lobby option reveals this object's contents without it having been scouted
+	bool revealsHiddenContents() const;
+
 	/// Returns true if this object is currently guarded
 	bool isGuarded() const;
 public:
@@ -54,6 +57,9 @@ public:
 
 	/// Returns true if object was scouted by player and he is aware of its internal state
 	bool wasScouted(PlayerColor player) const;
+
+	std::vector<Component> getPopupGuards(PlayerColor player, const CGHeroInstance * hero) const override;
+	std::vector<Component> getPopupRewards(PlayerColor player, const CGHeroInstance * hero) const override;
 	
 	/// gives reward to player or ask for choice in case of multiple rewards
 	void onHeroVisit(IGameEventCallback & gameEvents, const CGHeroInstance *h) const override;

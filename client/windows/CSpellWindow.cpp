@@ -728,6 +728,13 @@ void CSpellWindow::SpellArea::clickPressed(const Point & cursorPosition)
 			return;
 		}
 
+		if(owner->myHero->getOwner() != owner->myInt->playerID)
+		{
+			std::vector<std::shared_ptr<CComponent>> hlp(1, std::make_shared<CComponent>(ComponentType::SPELL, mySpell->id));
+			GAME->interface()->showInfoDialog(mySpell->getDescriptionTranslated(schoolLevel), hlp);
+			return;
+		}
+
 		auto spellCost = owner->myInt->cb->getSpellCost(mySpell, owner->myHero);
 		if(spellCost > owner->myHero->mana) //insufficient mana
 		{

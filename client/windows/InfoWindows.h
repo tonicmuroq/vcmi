@@ -12,6 +12,7 @@
 #include "CWindowObject.h"
 #include "../gui/TextAlignment.h"
 #include "../../lib/FunctionList.h"
+#include "../../lib/networkPacks/Component.h"
 
 class CGObjectInstance;
 class CGTownInstance;
@@ -23,6 +24,7 @@ class CGObelisk;
 
 class CComponent;
 class CComponentBox;
+class CAnimImage;
 class CSelectableComponent;
 class CTextBox;
 class CButton;
@@ -105,8 +107,16 @@ public:
 class CInfoBoxPopup : public AdventureMapPopup
 {
 	std::shared_ptr<CIntObject> tooltip;
+	std::shared_ptr<CFilledTexture> spellsBackground;
+	std::shared_ptr<CPicture> frameLeft;
+	std::shared_ptr<CPicture> frameRight;
+	std::shared_ptr<CPicture> frameBottom;
+	std::vector<std::shared_ptr<CAnimImage>> spellIcons;
+
+	void showMageGuildSpells(const CGTownInstance * town);
 
 public:
+
 	CInfoBoxPopup(Point position, const CGTownInstance * town);
 	CInfoBoxPopup(Point position, const CGHeroInstance * hero);
 	CInfoBoxPopup(Point position, const CGGarrison * garr);
@@ -171,6 +181,30 @@ class ObeliskPopup : public AdventureMapPopup
 
 public:
 	ObeliskPopup(const Point & position, const CGObelisk * obelisk);
+};
+
+class CreatureEncounterPopup : public AdventureMapPopup
+{
+	std::shared_ptr<CFilledTexture> filledBackground;
+	std::shared_ptr<CLabel> labelTitle;
+	std::shared_ptr<CComponentBox> stacks;
+	std::shared_ptr<CTextBox> text;
+
+public:
+	CreatureEncounterPopup(const Point & position, const CGCreature * creature, const CGHeroInstance * hero);
+};
+
+class RevealedContentsPopup : public AdventureMapPopup
+{
+	std::shared_ptr<CFilledTexture> filledBackground;
+	std::shared_ptr<CTextBox> text;
+	std::vector<std::shared_ptr<CLabel>> sectionLabels;
+	std::vector<std::shared_ptr<CComponentBox>> sectionBoxes;
+
+	void addSection(const std::string & textID, const std::vector<Component> & components);
+
+public:
+	RevealedContentsPopup(const Point & position, const CGObjectInstance * object, const CGHeroInstance * hero);
 };
 
 class SearchPopup : public AdventureMapPopup

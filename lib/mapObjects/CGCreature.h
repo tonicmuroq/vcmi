@@ -66,6 +66,10 @@ public:
 	const CCreature * getCreature() const;
 	TQuantity getJoiningAmount() const;
 
+	MetaString getEncounterDecisionText(const CGHeroInstance * hero) const;
+	MetaString getThreatText(const CGHeroInstance * hero) const;
+	std::vector<std::pair<CreatureID, TQuantity>> getEncounterStacks(const CGHeroInstance * hero) const;
+
 	//stack formation depends on position,
 	bool containsUpgradedStack() const;
 	int getNumberOfStacks(const CGHeroInstance *hero) const;

@@ -237,10 +237,12 @@ void CHeroWindow::updateArtifacts()
 	portraitArea->text = GAME->translator().translate(curHero->getBiographyTextID());
 	portraitImage->setFrame(curHero->getIconIndex());
 
+	const bool owned = curHero->getOwner() == GAME->interface()->playerID;
+
 	{
 		if(!garr)
 		{
-			bool removableTroops = curHero->getOwner() == GAME->interface()->playerID;
+			bool removableTroops = owned;
 			MetaString helpBoxText = MetaString::createFromTextID("core.heroscrn.32");
 			helpBoxText.replaceTextID("core.genrltxt.43");
 			std::string helpBox = helpBoxText.toString(&GAME->translator());
@@ -334,9 +336,9 @@ void CHeroWindow::updateArtifacts()
 	if(curHero->isMissionCritical())
 		noDismiss = true;
 
-	dismissButton->block(noDismiss);
+	dismissButton->block(noDismiss || !owned);
 
-	if(curHero->valOfBonuses(BonusType::BEFORE_BATTLE_REPOSITION) == 0)
+	if(curHero->valOfBonuses(BonusType::BEFORE_BATTLE_REPOSITION) == 0 || !owned)
 	{
 		tacticsButton->block(true);
 	}
@@ -349,7 +351,8 @@ void CHeroWindow::updateArtifacts()
 	formations->resetCallback();
 	//setting formations
 	formations->setSelected(curHero->formation == EArmyFormation::TIGHT ? 1 : 0);
-	formations->addCallback([this](int value){ GAME->interface()->cb->setFormation(curHero, static_cast<EArmyFormation>(value));});
+	if(owned)
+		formations->addCallback([this](int value){ GAME->interface()->cb->setFormation(curHero, static_cast<EArmyFormation>(value));});
 
 	morale->set(curHero);
 	luck->set(curHero);

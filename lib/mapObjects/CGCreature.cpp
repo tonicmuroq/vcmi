@@ -81,34 +81,87 @@ MetaString CGCreature::getMonsterLevelText() const
 	return monsterLevel;
 }
 
+MetaString CGCreature::getEncounterDecisionText(const CGHeroInstance * hero) const
+{
+	MetaString ms;
+	int decision = takenAction(hero, true);
+
+	switch (decision)
+	{
+	case FIGHT:
+		ms.appendTextID("core.genrltxt.246");
+		break;
+	case FLEE:
+		ms.appendTextID("core.genrltxt.245");
+		break;
+	case JOIN_FOR_FREE:
+		ms.appendTextID("core.genrltxt.243");
+		break;
+	default: //decision = cost in gold
+		ms.appendTextID("core.genrltxt.244");
+		ms.replaceNumber(decision);
+		break;
+	}
+	return ms;
+}
+
+MetaString CGCreature::getThreatText(const CGHeroInstance * hero) const
+{
+	MetaString ms = getMonsterLevelText();
+	ms.appendTextID("vcmi.adventureMap.monsterThreat.title");
+
+	int choice;
+	uint64_t armyStrength = getArmyStrength();
+	uint64_t heroStrength = hero->getTotalStrength();
+	double ratio = static_cast<double>(armyStrength) / heroStrength;
+	if (ratio < 0.1)  choice = 0;
+	else if (ratio < 0.25) choice = 1;
+	else if (ratio < 0.6)  choice = 2;
+	else if (ratio < 0.9)  choice = 3;
+	else if (ratio < 1.1)  choice = 4;
+	else if (ratio < 1.3)  choice = 5;
+	else if (ratio < 1.8)  choice = 6;
+	else if (ratio < 2.5)  choice = 7;
+	else if (ratio < 4)    choice = 8;
+	else if (ratio < 8)    choice = 9;
+	else if (ratio < 20)   choice = 10;
+	else                   choice = 11;
+
+	ms.appendTextID("vcmi.adventureMap.monsterThreat.levels", choice);
+	return ms;
+}
+
+std::vector<std::pair<CreatureID, TQuantity>> CGCreature::getEncounterStacks(const CGHeroInstance * hero) const
+{
+	// mirrors the split done in fight(): the first a stacks get m + 1 creatures, the rest get m
+	int stacksCount = getNumberOfStacks(hero);
+	int amount = getStackCount(SlotID(0));
+	int m = amount / stacksCount;
+	int b = stacksCount * (m + 1) - amount;
+	int a = stacksCount - b;
+
+	std::vector<std::pair<CreatureID, TQuantity>> result;
+	for (int slot = 0; slot < stacksCount; ++slot)
+		result.emplace_back(getCreatureID(), slot < a ? m + 1 : m);
+
+	if (stacksCount > 1 && containsUpgradedStack())
+	{
+		// which upgrade is rolled only when the battle starts, so it can be predicted only for a single upgrade path
+		const auto & upgrades = getCreature()->upgrades;
+		if (upgrades.size() == 1)
+			result[stacksCount / 2].first = *upgrades.begin();
+	}
+	return result;
+}
+
 MetaString CGCreature::getPopupText(const CGHeroInstance * hero) const
 {
 	MetaString hoverName;
 	if(hero->hasVisions(this, BonusCustomSubtype::visionsMonsters))
 	{
-		MetaString ms;
-		ms.append(getHoverText(hero));
-		ms.appendRawString("\n\n");
-
-		int decision = takenAction(hero, true);
-
-		switch (decision)
-		{
-		case FIGHT:
-			ms.appendTextID("core.genrltxt.246");
-			break;
-		case FLEE:
-			ms.appendTextID("core.genrltxt.245");
-			break;
-		case JOIN_FOR_FREE:
-			ms.appendTextID("core.genrltxt.243");
-			break;
-		default: //decision = cost in gold
-			ms.appendTextID("core.genrltxt.244");
-			ms.replaceNumber(decision);
-			break;
-		}
-		hoverName = ms;
+		hoverName.append(getHoverText(hero));
+		hoverName.appendRawString("\n\n");
+		hoverName.append(getEncounterDecisionText(hero));
 	}
 	else
 	{
@@ -116,29 +169,8 @@ MetaString CGCreature::getPopupText(const CGHeroInstance * hero) const
 	}
 
 	if (settings["general"]["enableUiEnhancements"].Bool())
-	{
-		hoverName.append(getMonsterLevelText());
-		hoverName.appendTextID("vcmi.adventureMap.monsterThreat.title");
+		hoverName.append(getThreatText(hero));
 
-		int choice;
-		uint64_t armyStrength = getArmyStrength();
-		uint64_t heroStrength = hero->getTotalStrength();
-		double ratio = static_cast<double>(armyStrength) / heroStrength;
-		if (ratio < 0.1)  choice = 0;
-		else if (ratio < 0.25) choice = 1;
-		else if (ratio < 0.6)  choice = 2;
-		else if (ratio < 0.9)  choice = 3;
-		else if (ratio < 1.1)  choice = 4;
-		else if (ratio < 1.3)  choice = 5;
-		else if (ratio < 1.8)  choice = 6;
-		else if (ratio < 2.5)  choice = 7;
-		else if (ratio < 4)    choice = 8;
-		else if (ratio < 8)    choice = 9;
-		else if (ratio < 20)   choice = 10;
-		else                   choice = 11;
-
-		hoverName.appendTextID("vcmi.adventureMap.monsterThreat.levels", choice);
-	}
 	return hoverName;
 }
 

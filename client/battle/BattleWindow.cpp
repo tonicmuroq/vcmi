@@ -172,17 +172,24 @@ void BattleWindow::createStickyHeroInfoWindows()
 {
 	OBJECT_CONSTRUCTION;
 
+	const CPlayerInterface * playerInterface = owner.getCurrentPlayerInterface();
+	const bool revealEnemyHeroes = playerInterface->cb->getStartInfo()->extraOptionsInfo.revealEnemyHeroes;
+
 	if(owner.defendingHeroInstance)
 	{
 		InfoAboutHero info;
 		info.initFromHero(owner.defendingHeroInstance, InfoAboutHero::EInfoLevel::INBATTLE);
 		defenderHeroWindow = std::make_shared<HeroInfoBasicPanel>(info, nullptr);
+		if(revealEnemyHeroes && owner.defendingHeroInstance->getOwner() != playerInterface->playerID)
+			defenderHeroWindow->revealHero(owner.defendingHeroInstance);
 	}
 	if(owner.attackingHeroInstance)
 	{
 		InfoAboutHero info;
 		info.initFromHero(owner.attackingHeroInstance, InfoAboutHero::EInfoLevel::INBATTLE);
 		attackerHeroWindow = std::make_shared<HeroInfoBasicPanel>(info, nullptr);
+		if(revealEnemyHeroes && owner.attackingHeroInstance->getOwner() != playerInterface->playerID)
+			attackerHeroWindow->revealHero(owner.attackingHeroInstance);
 	}
 
 	bool showInfoWindows = settings["battle"]["stickyHeroInfoWindows"].Bool();

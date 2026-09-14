@@ -601,7 +601,7 @@ void SeerHut::initObj(IGameRandomizer & gameRandomizer)
 
 MetaString SeerHut::buildText(PlayerColor player, bool onHover) const
 {
-	bool questActive = !isEmpty() && getQuest().activeForPlayers.count(player);
+	bool questActive = !isEmpty() && (revealsHiddenContents() || getQuest().activeForPlayers.count(player));
 
 	MetaString text;
 	if(!seerName.empty() && questActive) // only a real seer hut names a seer; quest guards leave it empty
@@ -636,10 +636,30 @@ std::vector<Component> SeerHut::getPopupComponents(const CGHeroInstance * hero) 
 
 std::vector<Component> SeerHut::getPopupComponents(PlayerColor player, const CGHeroInstance * hero) const
 {
+	std::vector<Component> result = getPopupGuards(player, hero);
+	vstd::concatenate(result, getPopupRewards(player, hero));
+	return result;
+}
+
+std::vector<Component> SeerHut::getPopupGuards(PlayerColor player, const CGHeroInstance * hero) const
+{
 	std::vector<Component> result;
-	if (!isEmpty() && getQuest().activeForPlayers.count(player))
+	if (!isEmpty() && (revealsHiddenContents() || getQuest().activeForPlayers.count(player)))
 		getQuest().mission.loadComponents(result, hero);
 	return result;
+}
+
+std::vector<Component> SeerHut::getPopupRewards(PlayerColor player, const CGHeroInstance * hero) const
+{
+	if (!revealsHiddenContents())
+		return {};
+
+	return CRewardableObject::getPopupRewards(player, hero);
+}
+
+std::string SeerHut::getPopupGuardsTextID() const
+{
+	return "vcmi.adventureMap.revealed.quest";
 }
 
 void SeerHut::setPropertyDer(ObjProperty what, ObjPropertyID identifier)

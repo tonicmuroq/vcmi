@@ -277,6 +277,9 @@ public:
 	std::vector<Component> getPopupComponents(PlayerColor player) const override;
 	std::vector<Component> getPopupComponents(const CGHeroInstance * hero) const override;
 	std::vector<Component> getPopupComponents(PlayerColor player, const CGHeroInstance * hero) const;
+	std::vector<Component> getPopupGuards(PlayerColor player, const CGHeroInstance * hero) const override;
+	std::vector<Component> getPopupRewards(PlayerColor player, const CGHeroInstance * hero) const override;
+	std::string getPopupGuardsTextID() const override;
 	void newTurn(IGameEventCallback & gameEvents, IGameRandomizer & gameRandomizer) const override;
 	void onHeroVisit(IGameEventCallback & gameEvents, const CGHeroInstance * h) const override;
 	void blockingDialogAnswered(IGameEventCallback & gameEvents, const CGHeroInstance *hero, int32_t answer) const override;

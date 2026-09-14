@@ -85,6 +85,8 @@ private:
 
 	const CGObjectInstance *getActiveObject(const int3 &tile);
 
+	const CGObjectInstance *getHiddenEvent(const int3 &tile);
+
 	/// exits currently opened world view mode and returns to normal map
 	void exitCastingMode();
 

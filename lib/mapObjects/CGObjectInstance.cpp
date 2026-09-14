@@ -351,6 +351,21 @@ std::vector<Component> CGObjectInstance::getPopupComponents(const CGHeroInstance
 	return getPopupComponents(hero->getOwner());
 }
 
+std::vector<Component> CGObjectInstance::getPopupGuards(PlayerColor player, const CGHeroInstance * hero) const
+{
+	return {};
+}
+
+std::vector<Component> CGObjectInstance::getPopupRewards(PlayerColor player, const CGHeroInstance * hero) const
+{
+	return hero ? getPopupComponents(hero) : getPopupComponents(player);
+}
+
+std::string CGObjectInstance::getPopupGuardsTextID() const
+{
+	return "vcmi.adventureMap.revealed.guards";
+}
+
 void CGObjectInstance::onHeroVisit(IGameEventCallback & gameEvents, const CGHeroInstance * h) const
 {
 	switch(ID.toEnum())

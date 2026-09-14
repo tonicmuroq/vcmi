@@ -348,6 +348,48 @@ void CGEvent::activated(IGameEventCallback & gameEvents, const CGHeroInstance * 
 	}
 }
 
+MetaString CGEvent::getPopupText(PlayerColor player) const
+{
+	MetaString result = CGPandoraBox::getPopupText(player);
+	appendRevealedInfo(result);
+	return result;
+}
+
+MetaString CGEvent::getPopupText(const CGHeroInstance * hero) const
+{
+	MetaString result = CGPandoraBox::getPopupText(hero);
+	appendRevealedInfo(result);
+	return result;
+}
+
+bool CGEvent::willTriggerFor(PlayerColor player) const
+{
+	if(!availableFor.count(player))
+		return false;
+
+	const auto * settings = cb->getPlayerSettings(player);
+	if(!settings)
+		return false;
+
+	return settings->isControlledByHuman() ? humanActivate : computerActivate;
+}
+
+void CGEvent::appendRevealedInfo(MetaString & text) const
+{
+	if(!cb->getStartInfo()->extraOptionsInfo.revealHiddenEvents)
+		return;
+
+	// the map author's message may itself contain a '%s', so nothing below uses placeholder replacement
+	if(!message.empty())
+	{
+		text.appendEOL();
+		text.append(message);
+	}
+
+	text.appendEOL();
+	text.appendTextID(removeAfterVisit ? "vcmi.adventureMap.hiddenEvent.removeAfterVisit" : "vcmi.adventureMap.hiddenEvent.repeatable");
+}
+
 void CGEvent::serializeJsonOptions(JsonSerializeFormat & handler)
 {
 	CGPandoraBox::serializeJsonOptions(handler);

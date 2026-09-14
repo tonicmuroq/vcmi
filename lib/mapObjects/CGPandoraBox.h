@@ -76,6 +76,11 @@ public:
 
 	void onHeroVisit(IGameEventCallback & gameEvents, const CGHeroInstance * h) const override;
 	void battleFinished(IGameEventCallback & gameEvents, const CGHeroInstance *hero, const BattleResult &result) const override;
+
+	MetaString getPopupText(PlayerColor player) const override;
+	MetaString getPopupText(const CGHeroInstance * hero) const override;
+
+	bool willTriggerFor(PlayerColor player) const;
 protected:
 	void grantRewardWithMessage(IGameEventCallback & gameEvents, const CGHeroInstance * contextHero, int rewardIndex, bool markAsVisit) const override;
 	void configureInfoWindow(InfoWindow & infoWindow, const CGHeroInstance * contextHero, int rewardIndex) const override;
@@ -84,4 +89,5 @@ protected:
 	void serializeJsonOptions(JsonSerializeFormat & handler) override;
 private:
 	void activated(IGameEventCallback & gameEvents, const CGHeroInstance * h) const;
+	void appendRevealedInfo(MetaString & text) const;
 };
