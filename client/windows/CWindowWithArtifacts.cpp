@@ -29,6 +29,7 @@
 
 #include "../../lib/CConfigHandler.h"
 #include "../../lib/GameLibrary.h"
+#include "../../lib/StartInfo.h"
 #include "../../lib/callback/CCallback.h"
 #include "../../lib/entities/artifact/ArtifactUtils.h"
 #include "../../lib/entities/artifact/CArtifact.h"
@@ -73,9 +74,15 @@ const CArtifactInstance * CWindowWithArtifacts::getPickedArtifact() const
 void CWindowWithArtifacts::clickPressedOnArtPlace(const CGHeroInstance * hero, const ArtifactPosition & slot,
 	bool allowExchange, bool altarTrading, bool closeWindow, const Point & cursorPosition)
 {
-	if(!GAME->interface()->makingTurn)
-		return;
 	if(hero == nullptr)
+		return;
+	if(hero->getOwner() != GAME->interface()->playerID && slot == ArtifactPosition::SPELLBOOK && hero->getArt(slot)
+		&& GAME->interface()->cb->getStartInfo()->extraOptionsInfo.revealEnemyHeroes)
+	{
+		ENGINE->windows().createAndPushWindow<CSpellWindow>(hero, GAME->interface(), GAME->interface()->battleInt.get());
+		return;
+	}
+	if(!GAME->interface()->makingTurn)
 		return;
 
 	if(const auto heroArtOwner = getHeroPickedArtifact())

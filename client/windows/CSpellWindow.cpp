@@ -728,6 +728,13 @@ void CSpellWindow::SpellArea::clickPressed(const Point & cursorPosition)
 			return;
 		}
 
+		if(owner->myHero->getOwner() != owner->myInt->playerID)
+		{
+			std::vector<std::shared_ptr<CComponent>> hlp(1, std::make_shared<CComponent>(ComponentType::SPELL, mySpell->id));
+			GAME->interface()->showInfoDialog(mySpell->getDescriptionTranslated(schoolLevel), hlp);
+			return;
+		}
+
 		auto spellCost = owner->myInt->cb->getSpellCost(mySpell, owner->myHero);
 		if(spellCost > owner->myHero->mana) //insufficient mana
 		{
@@ -810,12 +817,18 @@ void CSpellWindow::SpellArea::clickPressed(const Point & cursorPosition)
 	}
 }
 
+// the callback refuses spell queries about enemy heroes, whose spellbook is viewable only with revealEnemyHeroes
+bool CSpellWindow::isEnemyHero() const
+{
+	return myInt->cb->getPlayerRelations(myHero->getOwner(), myInt->playerID) == PlayerRelations::ENEMIES;
+}
+
 void CSpellWindow::SpellArea::showPopupWindow(const Point & cursorPosition)
 {
 	if(mySpell)
 	{
 		std::string dmgInfo;
-		auto causedDmg = owner->myInt->cb->estimateSpellDamage(mySpell, owner->myHero);
+		auto causedDmg = owner->isEnemyHero() ? mySpell->calculateDamage(owner->myHero) : owner->myInt->cb->estimateSpellDamage(mySpell, owner->myHero);
 		if(causedDmg == 0 || mySpell->id == SpellID::TITANS_LIGHTNING_BOLT) //Titan's Lightning Bolt already has damage info included
 			dmgInfo.clear();
 		else
@@ -857,7 +870,7 @@ void CSpellWindow::SpellArea::setSpell(const CSpell * spell)
 	{
 		SpellSchool whichSchool;
 		schoolLevel = owner->myHero->getSpellSchoolLevel(mySpell, &whichSchool);
-		auto spellCost = owner->myInt->cb->getSpellCost(mySpell, owner->myHero);
+		auto spellCost = owner->isEnemyHero() ? owner->myHero->getSpellCost(mySpell) : owner->myInt->cb->getSpellCost(mySpell, owner->myHero);
 
 		image->setFrame(mySpell->id.getNum());
 		image->visible = true;

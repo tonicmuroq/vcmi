@@ -120,6 +120,7 @@ class CSpellWindow : public CWindowObject, public IVideoHolder
 	void processSpells();
 	void searchInput();
 	void computeSpellsPerArea(); //recalculates spellAreas::mySpell
+	bool isEnemyHero() const;
 
 	void setSchoolImages(SpellSchool school);
 

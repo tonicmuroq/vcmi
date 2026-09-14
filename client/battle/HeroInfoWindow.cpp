@@ -10,6 +10,8 @@
 #include "StdInc.h"
 #include "HeroInfoWindow.h"
 
+#include "../CPlayerInterface.h"
+#include "../GameInstance.h"
 #include "../widgets/Images.h"
 #include "../widgets/TextControls.h"
 
@@ -68,6 +70,20 @@ void HeroInfoBasicPanel::initializeData(const InfoAboutHero & hero)
 	//spell points
 	labels.push_back(std::make_shared<CLabel>(39, 174, EFonts::FONT_TINY, ETextAlignment::CENTER, Colors::WHITE, LIBRARY->generaltexth->allTexts[387]));
 	labels.push_back(std::make_shared<CLabel>(39, 186, EFonts::FONT_TINY, ETextAlignment::CENTER, Colors::WHITE, std::to_string(currentSpellPoints) + "/" + std::to_string(maxSpellPoints)));
+}
+
+void HeroInfoBasicPanel::revealHero(const CGHeroInstance * hero)
+{
+	revealedHero = hero;
+	// the panel itself has no size of its own, only its background picture does
+	pos.w = 78;
+	pos.h = 202;
+	addUsedEvents(SHOW_POPUP);
+}
+
+void HeroInfoBasicPanel::showPopupWindow(const Point & cursorPosition)
+{
+	GAME->interface()->openHeroWindow(revealedHero);
 }
 
 void HeroInfoBasicPanel::update(const InfoAboutHero & updatedInfo)

@@ -167,7 +167,9 @@ std::function<void()> CGarrisonSlot::getDismiss() const
 bool CGarrisonSlot::viewInfo()
 {
 	UpgradeInfo pom(ID.getNum());
-	GAME->interface()->cb->fillUpgradeInfo(getObj(), ID, pom);
+	// the callback refuses upgrade info of enemy armies, which are viewable only with revealEnemyHeroes
+	if(GAME->interface()->cb->getPlayerRelations(getObj()->tempOwner, GAME->interface()->playerID) != PlayerRelations::ENEMIES)
+		GAME->interface()->cb->fillUpgradeInfo(getObj(), ID, pom);
 
 	bool canUpgrade = getObj()->tempOwner == GAME->interface()->playerID && pom.canUpgrade(); //upgrade is possible
 	std::function<void(CreatureID)> upgr = nullptr;

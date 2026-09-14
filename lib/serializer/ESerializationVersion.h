@@ -77,13 +77,17 @@ enum class ESerializationVersion : int32_t
 	SPELL_ID_WITH_MASTERY, // spell id is combined with spell mastery level
 	LOBBY_SCENARIO_LIST, // lobby lists maps and saved games of the server and selects them by name
 	RUMOR_REWORK, // rumor state stores typed rumor and rumors told since their pool was exhausted
+	REVEAL_EXTRA_OPTIONS, // extra options for revealing mage guild spells and hidden rewards
+	REVEAL_MONSTER_INFO, // extra option for revealing stack split and joining decision of wandering monsters
+	REVEAL_HIDDEN_EVENTS, // extra option for revealing map events that are normally invisible
+	REVEAL_ENEMY_HEROES, // extra option for revealing full details of enemy heroes
 
 	RELEASE_170 = HOTA_MAP_STACK_COUNT,
 	RELEASE_174 = CUSTOM_GARRISON_TITLE,
 
 	MINIMAL = RELEASE_170,
 	MINIMAL_LOBBY = LOBBY_SCENARIO_LIST, // client and server of lobby reject each other below this version
-	CURRENT = RUMOR_REWORK,
+	CURRENT = REVEAL_ENEMY_HEROES,
 };
 
 static_assert(ESerializationVersion::MINIMAL <= ESerializationVersion::CURRENT, "Invalid serialization version definition!");
