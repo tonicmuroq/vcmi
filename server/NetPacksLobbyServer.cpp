@@ -124,10 +124,9 @@ static std::string checkQuickSave(const CGameState & gs, const std::string & pat
 		return std::string("Failed to load quick save: ") + e.what();
 	}
 
-	// initial start info from quick load slot
+	// start info from quick load slot - saves store the randomized start info, not the pregame one
 	const auto * startInfo1 = mapInfo.scenarioOptionsOfSave.get();
-	// initial start info from game state (not current start info)
-	const auto * startInfo2 = gs.getInitialStartInfo();
+	const auto * startInfo2 = gs.getStartInfo();
 
 	if(!startInfo1)
 		return "Missing quick load start info.";
