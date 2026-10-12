@@ -337,10 +337,37 @@ void CArtifactSet::serializeJsonArtifacts(JsonSerializeFormat & handler, const s
 
 void CArtifactSet::serializeJsonHero(JsonSerializeFormat & handler, CMap * map)
 {
-	for(const auto & slot : ArtifactUtils::allWornSlots())
+	// artifact entries hold only the type id, so spells of scrolls are stored separately
+	std::map<ArtifactPosition, SpellID> wornScrollSpells;
+	std::vector<SpellID> backpackScrollSpells;
+
+	if(handler.saving)
 	{
-		serializeJsonSlot(handler, slot, map);
+		for(const auto & slot : ArtifactUtils::allWornSlots())
+		{
+			const ArtSlotInfo * info = getSlot(slot);
+			if(info != nullptr && !info->locked && info->getArt()->isScroll())
+				wornScrollSpells[slot] = info->getArt()->getScrollSpellID();
+		}
+		for(const ArtSlotInfo & info : artifactsInBackpack)
+			if(info.getArt()->isScroll())
+				backpackScrollSpells.push_back(info.getArt()->getScrollSpellID());
 	}
+
+	if(!handler.saving || !wornScrollSpells.empty() || !backpackScrollSpells.empty())
+	{
+		auto guard = handler.enterStruct("scrollSpells");
+		for(const auto & slot : ArtifactUtils::allWornSlots())
+		{
+			SpellID spell = wornScrollSpells[slot];
+			handler.serializeId(NArtifactPosition::namesHero.at(slot.num), spell, SpellID::NONE);
+			wornScrollSpells[slot] = spell;
+		}
+		handler.serializeIdArray(NArtifactPosition::backpack, backpackScrollSpells);
+	}
+
+	for(const auto & slot : ArtifactUtils::allWornSlots())
+		serializeJsonSlot(handler, slot, map, wornScrollSpells[slot]);
 
 	std::vector<ArtifactID> backpackTemp;
 
@@ -353,9 +380,14 @@ void CArtifactSet::serializeJsonHero(JsonSerializeFormat & handler, CMap * map)
 	handler.serializeIdArray(NArtifactPosition::backpack, backpackTemp);
 	if(!handler.saving)
 	{
+		auto nextScrollSpell = backpackScrollSpells.begin();
 		for(const ArtifactID & artifactID : backpackTemp)
 		{
-			auto * artifact = map->createArtifact(artifactID);
+			SpellID scrollSpell = SpellID::NONE;
+			if(artifactID.toArtifact()->isScroll() && nextScrollSpell != backpackScrollSpells.end())
+				scrollSpell = *nextScrollSpell++;
+
+			auto * artifact = map->createArtifact(artifactID, scrollSpell);
 			auto slot = ArtifactPosition::BACKPACK_START + artifactsInBackpack.size();
 			if(artifact->getType()->canBePutAt(this, slot))
 			{
@@ -376,7 +408,7 @@ void CArtifactSet::serializeJsonCommander(JsonSerializeFormat & handler)
 	logGlobal->error("CArtifactSet::serializeJsonCommander not implemented");
 }
 
-void CArtifactSet::serializeJsonSlot(JsonSerializeFormat & handler, const ArtifactPosition & slot, CMap * map)
+void CArtifactSet::serializeJsonSlot(JsonSerializeFormat & handler, const ArtifactPosition & slot, CMap * map, const SpellID & scrollSpell)
 {
 	ArtifactID artifactID;
 
@@ -396,7 +428,7 @@ void CArtifactSet::serializeJsonSlot(JsonSerializeFormat & handler, const Artifa
 
 		if(artifactID != ArtifactID::NONE)
 		{
-			auto * artifact = map->createArtifact(artifactID.toEnum());
+			auto * artifact = map->createArtifact(artifactID.toEnum(), scrollSpell);
 
 			if(artifact->getType()->canBePutAt(this, slot))
 			{

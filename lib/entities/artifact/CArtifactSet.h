@@ -61,5 +61,5 @@ private:
 	void serializeJsonCreature(JsonSerializeFormat & handler);
 	void serializeJsonCommander(JsonSerializeFormat & handler);
 
-	void serializeJsonSlot(JsonSerializeFormat & handler, const ArtifactPosition & slot, CMap * map);//normal slots
+	void serializeJsonSlot(JsonSerializeFormat & handler, const ArtifactPosition & slot, CMap * map, const SpellID & scrollSpell);//normal slots
 };
